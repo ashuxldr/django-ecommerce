@@ -86,6 +86,40 @@ class UserViewSet(viewsets.ModelViewSet):
             return [permission() for permission in self.permission_classes_by_action[self.action]]
         except KeyError:
             return [permission() for permission in self.permission_classes]
+        
+        
+class ProfileView(View, LoginRequiredMixin):
+
+def get(self, request):
+        return render(request, 'index/profile.html')
+
+def post(self, request):
+        user = User.objects.get(id=request.user.id)
+        user.username = request.POST.get('username')
+        user.email = request.POST.get('email')
+        profile_pic, created = models.Profile.objects.get_or_create(owner=request.user)
+        f = request.FILES.get('profilepic')
+        if isinstance(f, InMemoryUploadedFile):
+            bytearr = f.read()
+            profile_pic.content_type = f.content_type
+            profile_pic.picture = bytearr
+            print(profile_pic)
+        profile_pic.save()
+
+        password = request.POST.get('password')
+        if password:
+            user.set_password(password)
+            user.save()
+            return redirect('login')
+        user.save()
+        return redirect('profile')
+def stream_file(request):
+    pic, created = models.Profile.objects.get_or_create(owner = request.user)
+    response = HttpResponse()
+    response['Content-Type'] = pic.content_type
+    response['Content-Length'] = len(pic.picture)
+    response.write(pic.picture)
+    return response 
 
 
 
